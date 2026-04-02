@@ -1,0 +1,1189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NotSet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;1,9..144,300&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0e0e10;
+    --surface: #18181c;
+    --surface-raised: #222228;
+    --border: rgba(255,255,255,0.08);
+    --border-hover: rgba(255,255,255,0.18);
+    --text: #f0ede8;
+    --text-muted: rgba(240,237,232,0.45);
+    --red: #e8503a;
+    --green: #4caf82;
+    --blue: #5b8de8;
+    --purple: #a07de0;
+    --c1: #e8503a;
+    --c2: #5b8de8;
+    --c3: #4caf82;
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    overflow: hidden;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 1.5rem;
+    gap: 2rem;
+    position: relative;
+  }
+
+  /* Subtle grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .everything { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 2rem; width: 100%; max-width: 860px; }
+
+  /* Header */
+  header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    width: 100%;
+    padding: 0 0.25rem;
+  }
+
+  .logo {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 300;
+    font-size: 1.6rem;
+    letter-spacing: -0.02em;
+    color: var(--text);
+  }
+
+  .logo span {
+    color: var(--red);
+  }
+
+  .stats {
+    display: flex;
+    gap: 1.5rem;
+    align-items: baseline;
+  }
+
+  .stat {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+  }
+
+  .stat-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .stat-value {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--text);
+    transition: color 0.2s;
+  }
+
+  /* Timer bar */
+  .timer-track {
+    width: 100%;
+    height: 5px;
+    background: var(--border);
+    border-radius: 100px;
+    overflow: hidden;
+  }
+
+  .timer-fill {
+    height: 100%;
+    border-radius: 100px;
+    background: var(--green);
+    transition: background 0.4s;
+    will-change: width;
+  }
+
+  .timer-fill.urgent { background: var(--red); }
+
+  .timer-penalty {
+    animation: penaltyFlash 0.4s ease;
+  }
+
+  @keyframes penaltyFlash {
+    0%   { opacity: 1; }
+    25%  { opacity: 0.15; }
+    100% { opacity: 1; }
+  }
+
+  /* Instruction */
+  .instruction {
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    text-align: center;
+  }
+
+  /* Card grid */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    width: 100%;
+  }
+
+  @media (max-width: 640px) {
+    .card-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* Card */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    aspect-ratio: 2/3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.15s, transform 0.12s, background 0.15s;
+    user-select: none;
+  }
+
+  .card:hover {
+    border-color: var(--border-hover);
+    background: var(--surface-raised);
+    transform: translateY(-3px);
+  }
+
+  .card:active {
+    transform: translateY(0px) scale(0.97);
+  }
+
+  .card.correct {
+    border-color: var(--green) !important;
+    background: rgba(76, 175, 130, 0.08) !important;
+    animation: correctPulse 0.5s ease;
+  }
+
+  .card.wrong {
+    border-color: var(--red) !important;
+    background: rgba(232, 80, 58, 0.08) !important;
+    animation: shake 0.4s ease;
+  }
+
+  .card.dim {
+    opacity: 0.28;
+    pointer-events: none;
+    transform: none !important;
+  }
+
+  .card.disabled {
+    pointer-events: none;
+  }
+
+  @keyframes correctPulse {
+    0% { transform: scale(1); }
+    35% { transform: scale(1.04); }
+    100% { transform: scale(1); }
+  }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-6px); }
+    40% { transform: translateX(6px); }
+    60% { transform: translateX(-4px); }
+    80% { transform: translateX(4px); }
+  }
+
+  .card svg {
+    width: 80%;
+    height: 80%;
+  }
+
+  /* Feedback banner */
+  .feedback {
+    height: 1.4rem;
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    text-align: center;
+    transition: opacity 0.3s;
+    opacity: 0;
+  }
+
+  .feedback.show { opacity: 1; }
+  .feedback.correct { color: var(--green); }
+  .feedback.wrong { color: var(--red); }
+
+  /* Streak bar */
+  .streak-bar {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .streak-pip {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--border);
+    border: 1px solid var(--border-hover);
+    transition: background 0.2s, transform 0.2s;
+  }
+
+  .streak-pip.lit {
+    background: var(--green);
+    border-color: var(--green);
+    transform: scale(1.2);
+  }
+
+  /* Start / Game over overlay */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(14,14,16,0.92);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    z-index: 10;
+    backdrop-filter: blur(4px);
+  }
+
+  .overlay.hidden { display: none; }
+
+  .overlay-title {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 300;
+    font-size: clamp(2.5rem, 6vw, 4rem);
+    letter-spacing: -0.03em;
+    text-align: center;
+  }
+
+  .overlay-sub {
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    text-align: center;
+    line-height: 2;
+    max-width: 380px;
+  }
+
+  .btn {
+    margin-top: 0.5rem;
+    padding: 0.75rem 2.5rem;
+    background: transparent;
+    border: 1px solid var(--border-hover);
+    border-radius: 100px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, transform 0.1s;
+  }
+
+  .btn:hover {
+    background: var(--surface-raised);
+    border-color: rgba(255,255,255,0.3);
+  }
+
+  .btn:active { transform: scale(0.97); }
+
+  .score-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    width: 100%;
+    max-width: 320px;
+    margin: 0.25rem 0;
+  }
+
+  .score-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 0.5px solid var(--border);
+    gap: 1.5rem;
+  }
+
+  .score-row:last-child { border-bottom: none; }
+
+  .score-row-label {
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+
+  .score-row-detail {
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    flex: 1;
+    text-align: center;
+  }
+
+  .score-row-value {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--text);
+    min-width: 3ch;
+    text-align: right;
+  }
+
+  .score-total-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 14px 0 4px;
+    gap: 1.5rem;
+  }
+
+  .score-total-label {
+    font-size: 0.68rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  .score-total-value {
+    font-size: 2.2rem;
+    font-weight: 500;
+    line-height: 1;
+    color: var(--text);
+  }
+
+  .score-best-line {
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    text-align: right;
+    margin-top: 2px;
+  }
+
+  .score-best-line.new-best { color: var(--green); }
+
+  /* ── Instructions overlay ── */
+  .instr-page { display: none; flex-direction: column; align-items: center; gap: 1.5rem; width: 100%; max-width: 480px; }
+  .instr-page.active { display: flex; }
+
+  .instr-rule {
+    width: 100%;
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 16px;
+  }
+
+  .instr-rule-title {
+    font-size: 0.62rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+  }
+
+  .instr-rule-title span {
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .instr-cards-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .instr-card {
+    background: var(--surface-raised);
+    border: 0.5px solid var(--border);
+    border-radius: 10px;
+    width: 68px;
+    height: 96px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .instr-card svg { width: 76%; height: 76%; }
+
+  .instr-sep {
+    font-size: 1rem;
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+
+  .instr-verdict {
+    margin-top: 10px;
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    text-align: center;
+  }
+  .instr-verdict.valid   { color: var(--green); }
+  .instr-verdict.invalid { color: var(--red); }
+
+  .instr-attr-tags {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 8px;
+  }
+
+  .instr-tag {
+    font-size: 0.58rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 100px;
+    border: 0.5px solid var(--border-hover);
+    color: var(--text-muted);
+  }
+
+  .instr-tag.ok  { border-color: var(--green); color: var(--green); }
+  .instr-tag.bad { border-color: var(--red);   color: var(--red);   }
+
+  .instr-nav {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .instr-dots {
+    display: flex;
+    gap: 6px;
+  }
+
+  .instr-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--border-hover);
+    transition: background 0.2s;
+  }
+
+  .instr-dot.active { background: var(--text); }
+</style>
+</head>
+<body>
+
+<div class="everything">
+  <header>
+    <div class="logo">Not<span>Set</span></div>
+    <div class="stats">
+      <div class="stat">
+        <span class="stat-label">Score</span>
+        <span class="stat-value" id="score">0</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Best</span>
+        <span class="stat-value" id="best">0</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="timer-track" style="margin-top:-0.5rem;">
+    <div class="timer-fill" id="timerFill" style="width:100%"></div>
+  </div>
+
+  <p class="instruction">Which one does not belong to the set?</p>
+
+  <div class="card-grid" id="cardGrid"></div>
+
+  <div class="feedback" id="feedback"></div>
+
+  <div class="streak-bar" id="streakBar"></div>
+</div>
+
+<!-- Start overlay -->
+<div class="overlay" id="startOverlay">
+  <div class="overlay-title">Not<span style="color:var(--red)">Set</span></div>
+  <p class="overlay-sub">
+    Four collections of symbols appear.<br>
+    Three form a valid <em style="color:var(--text)">Set</em> — one does not.<br>
+    Find the odd one out before time runs out.<br>
+    <span style="color:var(--red)">Wrong answers cost 5 seconds.</span>
+  </p>
+  <button class="btn" id="startBtn">Play</button>
+  <button class="btn" id="howToBtn" style="margin-top:-0.25rem; border-color: var(--border); color: var(--text-muted);">How to play</button>
+</div>
+
+<!-- Instructions overlay -->
+<div class="overlay hidden" id="instrOverlay">
+
+  <!-- Page 1: The rule -->
+  <div class="instr-page active" id="instrPage1">
+    <div style="text-align:center;">
+      <p style="font-family:'Fraunces',serif;font-style:italic;font-size:1.4rem;font-weight:300;letter-spacing:-0.02em;">The Set rule</p>
+      <p style="font-size:0.68rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);margin-top:6px;">For every attribute, all three cards must be<br>either all the same — or all different.</p>
+    </div>
+
+    <div class="instr-rule">
+      <p class="instr-rule-title">Attribute: <span>colour</span> — all different ✓</p>
+      <div class="instr-cards-row" id="demoAllDiff"></div>
+      <div class="instr-attr-tags">
+        <span class="instr-tag ok">red</span>
+        <span class="instr-tag ok">blue</span>
+        <span class="instr-tag ok">green</span>
+      </div>
+    </div>
+
+    <div class="instr-rule">
+      <p class="instr-rule-title">Attribute: <span>count</span> — all same ✓</p>
+      <div class="instr-cards-row" id="demoAllSame"></div>
+      <div class="instr-attr-tags">
+        <span class="instr-tag ok">2</span>
+        <span class="instr-tag ok">2</span>
+        <span class="instr-tag ok">2</span>
+      </div>
+    </div>
+
+    <div class="instr-rule">
+      <p class="instr-rule-title">Attribute: <span>colour</span> — two the same ✗</p>
+      <div class="instr-cards-row" id="demoInvalid"></div>
+      <div class="instr-attr-tags">
+        <span class="instr-tag ok">red</span>
+        <span class="instr-tag bad">red</span>
+        <span class="instr-tag ok">blue</span>
+      </div>
+      <p class="instr-verdict invalid">Not a valid set</p>
+    </div>
+  </div>
+
+  <!-- Page 2: Full examples -->
+  <div class="instr-page" id="instrPage2">
+    <div style="text-align:center;">
+      <p style="font-family:'Fraunces',serif;font-style:italic;font-size:1.4rem;font-weight:300;letter-spacing:-0.02em;">Full examples</p>
+      <p style="font-size:0.68rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);margin-top:6px;">Each attribute checked independently.</p>
+    </div>
+
+    <div class="instr-rule">
+      <p class="instr-rule-title"><span>Valid set</span> — all attributes pass</p>
+      <div class="instr-cards-row" id="demoFullValid"></div>
+      <div class="instr-attr-tags" style="margin-top:10px;">
+        <span class="instr-tag ok">shape: all diff</span>
+        <span class="instr-tag ok">color: all diff</span>
+        <span class="instr-tag ok">count: all same</span>
+        <span class="instr-tag ok">fill: all diff</span>
+      </div>
+      <p class="instr-verdict valid">Valid set ✓</p>
+    </div>
+
+    <div class="instr-rule">
+      <p class="instr-rule-title"><span>Not a set</span> — one attribute fails</p>
+      <div class="instr-cards-row" id="demoFullInvalid"></div>
+      <div class="instr-attr-tags" style="margin-top:10px;">
+        <span class="instr-tag ok">shape: all diff</span>
+        <span class="instr-tag ok">color: all diff</span>
+        <span class="instr-tag bad">count: 1 · 1 · 2</span>
+        <span class="instr-tag ok">fill: all diff</span>
+      </div>
+      <p class="instr-verdict invalid">Not a valid set ✗</p>
+    </div>
+
+    <p style="font-size:0.65rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);text-align:center;line-height:1.9;">
+      In the game, three cards form a valid set.<br>
+      Your job: find the one that <em style="color:var(--text)">doesn't belong</em>.
+    </p>
+  </div>
+
+  <!-- Nav -->
+  <div class="instr-nav">
+    <button class="btn" id="instrBack" style="padding:0.75rem 1.8rem; font-size:1.1rem;">←</button>
+    <div class="instr-dots">
+      <div class="instr-dot active" id="dot1"></div>
+      <div class="instr-dot" id="dot2"></div>
+    </div>
+    <button class="btn" id="instrNext" style="padding:0.75rem 1.8rem; font-size:1.1rem;">→</button>
+  </div>
+  <button class="btn" id="instrPlay">Got it — Play</button>
+</div>
+
+<!-- Game over overlay -->
+<div class="overlay hidden" id="gameOverOverlay">
+  <div class="overlay-title" style="font-size:clamp(1.5rem,4vw,2.5rem); font-style:normal;" id="gameOverTitle">Time's up.</div>
+
+  <div class="score-breakdown">
+    <div class="score-row">
+      <span class="score-row-label">Rounds correct</span>
+      <span class="score-row-detail" id="breakdownRoundsCalc"></span>
+      <span class="score-row-value" id="breakdownRoundsVal">0</span>
+    </div>
+    <div class="score-row">
+      <span class="score-row-label">Best streak</span>
+      <span class="score-row-detail" id="breakdownStreakCalc"></span>
+      <span class="score-row-value" id="breakdownStreakVal">0</span>
+    </div>
+    <div class="score-total-row">
+      <span class="score-total-label">Total</span>
+      <span class="score-total-value" id="finalScore">0</span>
+    </div>
+  </div>
+
+  <p class="score-best-line" id="bestLine">Best: 0</p>
+
+  <button class="btn" id="restartBtn">Play again</button>
+</div>
+
+<script>
+// ─── Types & Constants ────────────────────────────────────────────────────────
+
+const SHAPES = ['oval', 'diamond', 'squiggle'];
+const COLORS = ['#e8503a', '#5b8de8', '#4caf82'];
+const COUNTS = [1, 2, 3];
+const FILLS  = ['solid', 'stripe', 'outline'];
+
+const STREAK_MAX   = 5;
+const TIMER_START  = 30000; // ms — total time
+const PENALTY_MS   = 5000;  // ms deducted per wrong answer
+const BONUS_MS     = 2000;  // ms added per correct answer
+
+// ─── Card Logic ───────────────────────────────────────────────────────────────
+
+function randomCard() {
+  return {
+    shape: SHAPES[Math.floor(Math.random() * 3)],
+    color: COLORS[Math.floor(Math.random() * 3)],
+    count: COUNTS[Math.floor(Math.random() * 3)],
+    fill:  FILLS[Math.floor(Math.random() * 3)],
+  };
+}
+
+// For an attribute across 3 cards: valid if all same OR all different
+function validAttr(a, b, c) {
+  return (a === b && b === c) || (a !== b && b !== c && a !== c);
+}
+
+function isValidSet(a, b, c) {
+  return validAttr(a.shape, b.shape, c.shape)
+      && validAttr(a.color, b.color, c.color)
+      && validAttr(a.count, b.count, c.count)
+      && validAttr(a.fill,  b.fill,  c.fill);
+}
+
+function cardsEqual(a, b) {
+  return a.shape === b.shape && a.color === b.color
+      && a.count === b.count && a.fill  === b.fill;
+}
+
+// Given two distinct cards, find all valid distinct third cards that complete the set
+function findCompletions(a, b) {
+  const results = [];
+  for (const shape of SHAPES) {
+    for (const color of COLORS) {
+      for (const count of COUNTS) {
+        for (const fill of FILLS) {
+          const c = { shape, color, count, fill };
+          if (!cardsEqual(c, a) && !cardsEqual(c, b) && isValidSet(a, b, c))
+            results.push(c);
+        }
+      }
+    }
+  }
+  return results;
+}
+
+// Generate a valid set of 3 mutually distinct cards
+function generateValidSet() {
+  for (let attempt = 0; attempt < 500; attempt++) {
+    const a = randomCard();
+    const b = randomCard();
+    if (cardsEqual(a, b)) continue;
+    const completions = findCompletions(a, b);
+    if (completions.length > 0) {
+      const c = completions[Math.floor(Math.random() * completions.length)];
+      return [a, b, c];
+    }
+  }
+  // Deterministic fallback: all-different across every attribute
+  return [
+    { shape: SHAPES[0], color: COLORS[0], count: COUNTS[0], fill: FILLS[0] },
+    { shape: SHAPES[1], color: COLORS[1], count: COUNTS[1], fill: FILLS[1] },
+    { shape: SHAPES[2], color: COLORS[2], count: COUNTS[2], fill: FILLS[2] },
+  ];
+}
+
+// Generate a card that is NOT a valid set with any two of the three set cards,
+// and is not identical to any set card
+function generateOddOneOut(setCards) {
+  const [a, b, c] = setCards;
+  for (let attempt = 0; attempt < 500; attempt++) {
+    const candidate = randomCard();
+    if (setCards.some(s => cardsEqual(s, candidate))) continue;
+    const breaksAll = !isValidSet(a, b, candidate)
+                   && !isValidSet(a, c, candidate)
+                   && !isValidSet(b, c, candidate);
+    if (breaksAll) return candidate;
+  }
+  // Fallback: mutate every attribute of a set card until it's unique and breaks the set
+  const attrs = ['shape', 'color', 'count', 'fill'];
+  const options = { shape: SHAPES, color: COLORS, count: COUNTS, fill: FILLS };
+  for (const base of setCards) {
+    for (const attr of attrs) {
+      const pool = options[attr].filter(v => v !== base[attr]);
+      for (const val of pool) {
+        const candidate = { ...base, [attr]: val };
+        if (setCards.some(s => cardsEqual(s, candidate))) continue;
+        if (!isValidSet(a, b, candidate)
+         && !isValidSet(a, c, candidate)
+         && !isValidSet(b, c, candidate)) return candidate;
+      }
+    }
+  }
+  // Should never reach here given the search space
+  return { shape: SHAPES[0], color: COLORS[2], count: COUNTS[1], fill: FILLS[2] };
+}
+
+function generateRound() {
+  const setCards = generateValidSet();
+  const odd = generateOddOneOut(setCards);
+  const all = [...setCards, odd];
+  // shuffle
+  for (let i = all.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [all[i], all[j]] = [all[j], all[i]];
+  }
+  const oddIndex = all.indexOf(odd);
+  return { cards: all, oddIndex };
+}
+
+// ─── SVG Rendering ────────────────────────────────────────────────────────────
+
+function symbolPath(shape, x, y, w, h) {
+  if (shape === 'oval') {
+    const rx = w / 2, ry = h / 2;
+    return `<ellipse cx="${x + rx}" cy="${y + ry}" rx="${rx}" ry="${ry}" />`;
+  }
+  if (shape === 'diamond') {
+    const mx = x + w / 2, my = y + h / 2;
+    return `<polygon points="${mx},${y} ${x + w},${my} ${mx},${y + h} ${x},${my}" />`;
+  }
+  // wave — clean S-curve, closed into a filled band
+  const t = h * 0.18; // wave amplitude
+  const x0 = x, x1 = x + w;
+  const ymid = y + h / 2;
+  // top edge: S-wave going left→right
+  // bottom edge: same S-wave shifted down, reversed
+  const thick = h * 0.32;
+  return `<path d="
+    M ${x0} ${ymid}
+    C ${x0 + w * 0.25} ${ymid - t * 2},
+      ${x0 + w * 0.75} ${ymid + t * 2},
+      ${x1} ${ymid}
+    L ${x1} ${ymid + thick}
+    C ${x0 + w * 0.75} ${ymid + thick + t * 2},
+      ${x0 + w * 0.25} ${ymid + thick - t * 2},
+      ${x0} ${ymid + thick}
+    Z
+  " />`;
+}
+
+function renderCard(card) {
+  const { shape, color, count, fill } = card;
+  const W = 120, H = 200;
+  const sw = 36, sh = 54; // symbol width/height
+  const gap = 12;
+  const totalH = count * sh + (count - 1) * gap;
+  const startY = (H - totalH) / 2;
+  const startX = (W - sw) / 2;
+
+  let shapeDefs = '';
+  const clipId = `clip_${Math.random().toString(36).slice(2, 7)}`;
+
+  let symbols = '';
+  for (let i = 0; i < count; i++) {
+    const y = startY + i * (sh + gap);
+    const path = symbolPath(shape, startX, y, sw, sh);
+
+    if (fill === 'solid') {
+      symbols += `<g fill="${color}" stroke="none">${path}</g>`;
+    } else if (fill === 'outline') {
+      symbols += `<g fill="none" stroke="${color}" stroke-width="2">${path}</g>`;
+    } else {
+      // stripe — clip stripes to shape
+      const id = `${clipId}_${i}`;
+      let stripes = '';
+      for (let sy = 0; sy < H; sy += 5) {
+        stripes += `<line x1="0" y1="${sy}" x2="${W}" y2="${sy}" stroke="${color}" stroke-width="1.5" />`;
+      }
+      shapeDefs += `<clipPath id="${id}">${path}</clipPath>`;
+      symbols += `
+        <g clip-path="url(#${id})">${stripes}</g>
+        <g fill="none" stroke="${color}" stroke-width="1.5">${path}</g>
+      `;
+    }
+  }
+
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+    <defs>${shapeDefs}</defs>
+    ${symbols}
+  </svg>`;
+}
+
+// ─── Game State ───────────────────────────────────────────────────────────────
+
+let score      = 0;  // rounds correct this run
+let best       = parseInt(localStorage.getItem('notset_best') || '0');  // stored as final score
+let streak     = 0;  // current streak
+let bestStreak = 0;  // best streak achieved this run
+let round      = null;
+let answered   = false;
+
+// Timer state
+let timeLeft  = TIMER_START;  // ms remaining
+let lastTick  = null;          // timestamp of last rAF
+let rafHandle = null;
+let gameOver  = false;
+let gameOverReason = 'time'; // 'time' | 'wrong' (unused now, but handy)
+
+// ─── DOM ──────────────────────────────────────────────────────────────────────
+
+const cardGrid        = document.getElementById('cardGrid');
+const feedbackEl      = document.getElementById('feedback');
+const scoreEl         = document.getElementById('score');
+const bestEl          = document.getElementById('best');
+const streakBar       = document.getElementById('streakBar');
+const startOverlay    = document.getElementById('startOverlay');
+const gameOverOverlay = document.getElementById('gameOverOverlay');
+const gameOverTitle   = document.getElementById('gameOverTitle');
+const finalScoreEl         = document.getElementById('finalScore');
+const breakdownRoundsCalc  = document.getElementById('breakdownRoundsCalc');
+const breakdownRoundsVal   = document.getElementById('breakdownRoundsVal');
+const breakdownStreakCalc  = document.getElementById('breakdownStreakCalc');
+const breakdownStreakVal   = document.getElementById('breakdownStreakVal');
+const bestLine             = document.getElementById('bestLine');
+const timerFill       = document.getElementById('timerFill');
+
+bestEl.textContent = best;
+
+// ─── Timer ────────────────────────────────────────────────────────────────────
+
+function renderTimer() {
+  const pct = Math.max(0, timeLeft / TIMER_START) * 100;
+  timerFill.style.width = pct.toFixed(2) + '%';
+  const urgent = timeLeft < TIMER_START * 0.25;
+  timerFill.classList.toggle('urgent', urgent);
+}
+
+function tickTimer(now) {
+  if (gameOver) return;
+  if (lastTick !== null) {
+    const delta = now - lastTick;
+    timeLeft = Math.max(0, timeLeft - delta);
+    renderTimer();
+    if (timeLeft <= 0) {
+      endGame('time');
+      return;
+    }
+  }
+  lastTick = now;
+  rafHandle = requestAnimationFrame(tickTimer);
+}
+
+function startTimer() {
+  if (rafHandle) cancelAnimationFrame(rafHandle);
+  lastTick = null;
+  rafHandle = requestAnimationFrame(tickTimer);
+}
+
+function stopTimer() {
+  if (rafHandle) cancelAnimationFrame(rafHandle);
+  rafHandle = null;
+}
+
+function applyPenalty() {
+  timeLeft = Math.max(0, timeLeft - PENALTY_MS);
+  renderTimer();
+  // visual flash on bar
+  timerFill.classList.remove('timer-penalty');
+  void timerFill.offsetWidth; // reflow to restart animation
+  timerFill.classList.add('timer-penalty');
+}
+
+// ─── UI helpers ───────────────────────────────────────────────────────────────
+
+function updateStreakBar() {
+  streakBar.innerHTML = '';
+  for (let i = 0; i < STREAK_MAX; i++) {
+    const pip = document.createElement('div');
+    pip.className = 'streak-pip' + (i < streak ? ' lit' : '');
+    streakBar.appendChild(pip);
+  }
+}
+
+function newRound() {
+  answered = false;
+  round = generateRound();
+  cardGrid.innerHTML = '';
+
+  round.cards.forEach((card, i) => {
+    const el = document.createElement('div');
+    el.className = 'card';
+    el.innerHTML = renderCard(card);
+    el.addEventListener('click', () => handleGuess(i, el));
+    cardGrid.appendChild(el);
+  });
+
+  feedbackEl.className = 'feedback';
+  feedbackEl.textContent = '';
+  updateStreakBar();
+}
+
+function handleGuess(index, el) {
+  if (answered || gameOver) return;
+  answered = true;
+
+  const cards = Array.from(cardGrid.children);
+  cards.forEach(c => c.classList.add('disabled'));
+
+  if (index === round.oddIndex) {
+    // ── Correct ──
+    el.classList.add('correct');
+    cards.forEach((c, i) => { if (i !== index) c.classList.add('dim'); });
+
+    score++;
+    streak++;
+    if (streak > bestStreak) bestStreak = streak;
+
+    timeLeft = Math.min(TIMER_START, timeLeft + BONUS_MS);
+    renderTimer();
+
+    const displayScore = score * 10;
+    if (displayScore > best) {
+      best = displayScore;
+      localStorage.setItem('notset_best', best);
+    }
+
+    scoreEl.textContent = displayScore;
+    bestEl.textContent  = best;
+    updateStreakBar();
+
+    feedbackEl.className = 'feedback correct show';
+    feedbackEl.textContent = streak >= 3 ? `+${BONUS_MS / 1000}s · ${streak} streak!` : `+${BONUS_MS / 1000}s`;
+
+    setTimeout(newRound, 900);
+
+  } else {
+    // ── Wrong — penalty, don't end game ──
+    streak = 0;
+    updateStreakBar();
+
+    el.classList.add('wrong');
+    const correctEl = cards[round.oddIndex];
+    correctEl.classList.add('correct');
+    cards.forEach((c, i) => {
+      if (i !== index && i !== round.oddIndex) c.classList.add('dim');
+    });
+
+    applyPenalty();
+
+    feedbackEl.className = 'feedback wrong show';
+    feedbackEl.textContent = `−${PENALTY_MS / 1000}s`;
+
+    // If penalty drained the clock, endGame is already called in tickTimer.
+    // Otherwise resume after brief pause.
+    setTimeout(() => {
+      if (!gameOver) newRound();
+    }, 1100);
+  }
+}
+
+function endGame(reason) {
+  gameOver = true;
+  stopTimer();
+
+  Array.from(cardGrid.children).forEach(c => c.classList.add('disabled', 'dim'));
+
+  if (reason === 'time') gameOverTitle.textContent = "Time's up.";
+
+  const roundsPts  = score * 10;
+  const streakPts  = bestStreak * 10;
+  const finalScore = roundsPts + streakPts;
+
+  const isNewBest = finalScore > best;
+  if (isNewBest) {
+    best = finalScore;
+    localStorage.setItem('notset_best', best);
+    bestEl.textContent = best;
+  }
+
+  breakdownRoundsCalc.textContent = `${score} × 10`;
+  breakdownRoundsVal.textContent  = roundsPts;
+  breakdownStreakCalc.textContent = `${bestStreak} × 10`;
+  breakdownStreakVal.textContent  = streakPts;
+  finalScoreEl.textContent        = finalScore;
+
+  bestLine.textContent = isNewBest ? 'New best!' : `Best: ${best}`;
+  bestLine.className   = 'score-best-line' + (isNewBest ? ' new-best' : '');
+
+  setTimeout(() => gameOverOverlay.classList.remove('hidden'), 600);
+}
+
+function startGame() {
+  score      = 0;
+  streak     = 0;
+  bestStreak = 0;
+  gameOver   = false;
+  timeLeft   = TIMER_START;
+
+  scoreEl.textContent = 0;
+  bestEl.textContent  = best;
+
+  renderTimer();
+
+  startOverlay.classList.add('hidden');
+  gameOverOverlay.classList.add('hidden');
+
+  newRound();
+  startTimer();
+}
+
+// ─── Instructions ────────────────────────────────────────────────────────────
+
+function renderMiniCard(card) {
+  const W = 80, H = 120;
+  const sw = 24, sh = 34;
+  const gap = 7;
+  const { shape, color, count, fill } = card;
+  const totalH = count * sh + (count - 1) * gap;
+  const startY = (H - totalH) / 2;
+  const startX = (W - sw) / 2;
+  const clipBase = `mc_${Math.random().toString(36).slice(2,7)}`;
+
+  let defs = '', syms = '';
+  for (let i = 0; i < count; i++) {
+    const y = startY + i * (sh + gap);
+    const path = symbolPath(shape, startX, y, sw, sh);
+    if (fill === 'solid') {
+      syms += `<g fill="${color}">${path}</g>`;
+    } else if (fill === 'outline') {
+      syms += `<g fill="none" stroke="${color}" stroke-width="1.5">${path}</g>`;
+    } else {
+      const id = `${clipBase}_${i}`;
+      let stripes = '';
+      for (let sy = 0; sy < H; sy += 4)
+        stripes += `<line x1="0" y1="${sy}" x2="${W}" y2="${sy}" stroke="${color}" stroke-width="1.2"/>`;
+      defs += `<clipPath id="${id}">${path}</clipPath>`;
+      syms += `<g clip-path="url(#${id})">${stripes}</g><g fill="none" stroke="${color}" stroke-width="1.2">${path}</g>`;
+    }
+  }
+  const el = document.createElement('div');
+  el.className = 'instr-card';
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"><defs>${defs}</defs>${syms}</svg>`;
+  return el;
+}
+
+function populateInstrDemo(containerId, cards) {
+  const el = document.getElementById(containerId);
+  cards.forEach((card, i) => {
+    if (i > 0) {
+      const sep = document.createElement('span');
+      sep.className = 'instr-sep';
+      sep.textContent = '·';
+      el.appendChild(sep);
+    }
+    el.appendChild(renderMiniCard(card));
+  });
+}
+
+// Demo cards — hand-picked to clearly illustrate each rule
+populateInstrDemo('demoAllDiff', [
+  { shape: 'oval',     color: '#e8503a', count: 1, fill: 'solid'   },
+  { shape: 'oval',     color: '#5b8de8', count: 1, fill: 'solid'   },
+  { shape: 'oval',     color: '#4caf82', count: 1, fill: 'solid'   },
+]);
+populateInstrDemo('demoAllSame', [
+  { shape: 'oval',     color: '#e8503a', count: 2, fill: 'solid'   },
+  { shape: 'diamond',  color: '#5b8de8', count: 2, fill: 'stripe'  },
+  { shape: 'squiggle', color: '#4caf82', count: 2, fill: 'outline' },
+]);
+populateInstrDemo('demoInvalid', [
+  { shape: 'oval',     color: '#e8503a', count: 1, fill: 'solid'   },
+  { shape: 'diamond',  color: '#e8503a', count: 2, fill: 'stripe'  },
+  { shape: 'squiggle', color: '#5b8de8', count: 3, fill: 'outline' },
+]);
+populateInstrDemo('demoFullValid', [
+  { shape: 'oval',     color: '#e8503a', count: 2, fill: 'solid'   },
+  { shape: 'diamond',  color: '#5b8de8', count: 2, fill: 'stripe'  },
+  { shape: 'squiggle', color: '#4caf82', count: 2, fill: 'outline' },
+]);
+populateInstrDemo('demoFullInvalid', [
+  { shape: 'oval',     color: '#e8503a', count: 1, fill: 'solid'   },
+  { shape: 'diamond',  color: '#5b8de8', count: 1, fill: 'stripe'  },
+  { shape: 'squiggle', color: '#4caf82', count: 2, fill: 'outline' },
+]);
+
+// Pagination
+let instrPage = 1;
+const pages = [document.getElementById('instrPage1'), document.getElementById('instrPage2')];
+const dots   = [document.getElementById('dot1'),       document.getElementById('dot2')];
+
+function showInstrPage(n) {
+  instrPage = n;
+  pages.forEach((p, i) => p.classList.toggle('active', i === n - 1));
+  dots.forEach((d, i)  => d.classList.toggle('active', i === n - 1));
+  document.getElementById('instrBack').style.opacity = n === 1 ? '0.25' : '1';
+  document.getElementById('instrBack').style.pointerEvents = n === 1 ? 'none' : 'auto';
+}
+
+showInstrPage(1);
+
+document.getElementById('instrNext').addEventListener('click', () => {
+  if (instrPage < 2) showInstrPage(instrPage + 1);
+});
+document.getElementById('instrBack').addEventListener('click', () => {
+  if (instrPage > 1) showInstrPage(instrPage - 1);
+});
+document.getElementById('howToBtn').addEventListener('click', () => {
+  startOverlay.classList.add('hidden');
+  document.getElementById('instrOverlay').classList.remove('hidden');
+  showInstrPage(1);
+});
+document.getElementById('instrPlay').addEventListener('click', () => {
+  document.getElementById('instrOverlay').classList.add('hidden');
+  startGame();
+});
+
+document.getElementById('startBtn').addEventListener('click', startGame);
+document.getElementById('restartBtn').addEventListener('click', startGame);
+</script>
+</body>
+</html>
